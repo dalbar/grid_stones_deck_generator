@@ -121,7 +121,7 @@ function generate_pattern($staropt$star, size, max_stones) {
     while(true) {
       var res = _res;
       var cur_rows = _cur_rows;
-      if (cur_rows > size) {
+      if (cur_rows === size) {
         return res;
       } else {
         var new_res = Belt_List.flatten(Belt_List.map(res, (function (matrix) {
@@ -133,7 +133,7 @@ function generate_pattern($staropt$star, size, max_stones) {
       }
     };
   };
-  return Belt_List.map(Belt_List.keep(filter_dups_from_list(loop(0, rows)), (function (array) {
+  return Belt_List.map(Belt_List.keep(filter_dups_from_list(loop(1, rows)), (function (array) {
                     return has_at_least_n_stones(array, min_stones);
                   })), (function (matrix) {
                 return shape_quad(size, matrix);
@@ -150,11 +150,11 @@ function get_unsafe(matrix, x_ind, y_ind) {
 }
 
 function set_unsafe(matrix, x_ind, y_ind, value) {
-  console.log(x_ind, y_ind, value);
   return Belt_Array.setExn(Belt_Array.getExn(matrix, y_ind), x_ind, value);
 }
 
 function rot90_square(matrix) {
+  console.log(matrix);
   var dim = matrix.length;
   var rotated = Belt_Array.map(Belt_Array.make(dim, -1), (function (param) {
           return Belt_Array.make(dim, param);
@@ -167,8 +167,90 @@ function rot90_square(matrix) {
   return rotated;
 }
 
+function get_array_dim(m1) {
+  var m = m1.length;
+  var n = Belt_Array.getExn(m1, 0).length;
+  return /* tuple */[
+          n,
+          m
+        ];
+}
+
+function cmp_matrix_square(m1, m2) {
+  var dim = m1.length;
+  var _idx = 0;
+  while(true) {
+    var idx = _idx;
+    if (idx === dim) {
+      return 1;
+    } else {
+      var row_m1 = Belt_Array.getExn(m1, idx);
+      var row_m2 = Belt_Array.getExn(m2, idx);
+      if (Belt_Array.eq(row_m1, row_m2, Caml_obj.caml_equal)) {
+        _idx = idx + 1 | 0;
+        continue ;
+      } else {
+        return -1;
+      }
+    }
+  };
+}
+
+function eq_matrix_square(m1, m2) {
+  return cmp_matrix_square(m1, m2) === 1;
+}
+
+function is_rot_equal(m1, m2) {
+  var m2_rot_90 = rot90_square(m2);
+  var m2_rot_180 = rot90_square(m2_rot_90);
+  var m2_rot_270 = rot90_square(m2_rot_180);
+  var _matrices = /* :: */[
+    m2,
+    /* :: */[
+      m2_rot_90,
+      /* :: */[
+        m2_rot_180,
+        /* :: */[
+          m2_rot_270,
+          /* [] */0
+        ]
+      ]
+    ]
+  ];
+  while(true) {
+    var matrices = _matrices;
+    if (matrices) {
+      if (eq_matrix_square(m1, matrices[0])) {
+        return true;
+      } else {
+        _matrices = matrices[1];
+        continue ;
+      }
+    } else {
+      return false;
+    }
+  };
+}
+
+function make_n_m_matrix(n, m) {
+  return Belt_Array.map(Belt_Array.make(n, 0), (function (param) {
+                return Belt_Array.make(m, param);
+              }));
+}
+
+function filter_rot_equal(matrices) {
+  var not_rot_equal = Belt_List.make(0, make_n_m_matrix(0, 0));
+  return Belt_List.reduce(matrices, not_rot_equal, (function (acc, row) {
+                if (Belt_List.has(acc, row, is_rot_equal)) {
+                  return acc;
+                } else {
+                  return Belt_List.add(acc, row);
+                }
+              }));
+}
+
 function generate_size_3_stones_6(param) {
-  var deck_string = $$String.concat(",\n", Belt_List.map(generate_pattern(5, 3, 6), (function (pattern) {
+  var deck_string = $$String.concat(",\n", Belt_List.map(filter_rot_equal(generate_pattern(5, 3, 7)), (function (pattern) {
               return Belt_Option.getExn(Caml_option.undefined_to_opt(JSON.stringify(pattern)));
             })));
   return write_deck($$String.concat("\n", /* :: */[
@@ -184,6 +266,20 @@ function generate_size_3_stones_6(param) {
 }
 
 function m1(param) {
+  var test_mat = make_n_m_matrix(3, 3);
+  set_unsafe(test_mat, 0, 0, 1);
+  set_unsafe(test_mat, 1, 0, 2);
+  set_unsafe(test_mat, 2, 0, 3);
+  set_unsafe(test_mat, 0, 1, 4);
+  set_unsafe(test_mat, 1, 1, 5);
+  set_unsafe(test_mat, 2, 1, 6);
+  set_unsafe(test_mat, 0, 2, 7);
+  set_unsafe(test_mat, 1, 2, 8);
+  set_unsafe(test_mat, 2, 2, 9);
+  return rot90_square(rot90_square(test_mat));
+}
+
+function m2(param) {
   var test_mat = Belt_Array.map(Belt_Array.make(3, 0), (function (param) {
           return Belt_Array.make(3, param);
         }));
@@ -196,16 +292,10 @@ function m1(param) {
   set_unsafe(test_mat, 0, 2, 7);
   set_unsafe(test_mat, 1, 2, 8);
   set_unsafe(test_mat, 2, 2, 9);
-  console.log(test_mat);
-  console.log("now");
-  return rot90_square(rot90_square(test_mat));
+  return test_mat;
 }
 
-var a = m1(/* () */0);
-
-console.log("done");
-
-console.log(a);
+generate_size_3_stones_6(/* () */0);
 
 exports.DIM = DIM;
 exports.generate_one_stone_permutations = generate_one_stone_permutations;
@@ -219,6 +309,13 @@ exports.write_deck = write_deck;
 exports.get_unsafe = get_unsafe;
 exports.set_unsafe = set_unsafe;
 exports.rot90_square = rot90_square;
+exports.get_array_dim = get_array_dim;
+exports.cmp_matrix_square = cmp_matrix_square;
+exports.eq_matrix_square = eq_matrix_square;
+exports.is_rot_equal = is_rot_equal;
+exports.make_n_m_matrix = make_n_m_matrix;
+exports.filter_rot_equal = filter_rot_equal;
 exports.generate_size_3_stones_6 = generate_size_3_stones_6;
 exports.m1 = m1;
-/* a Not a pure module */
+exports.m2 = m2;
+/*  Not a pure module */

@@ -54,12 +54,12 @@ let has_at_least_n_stones array n =
 let generate_pattern ?(min_stones = 0) size max_stones = 
   let rows = generate_row_permutations size max_stones in 
   let rec loop cur_rows res = 
-    if cur_rows > size then res 
+    if cur_rows = size then res 
     else 
       let new_res = 
         List.map res (fun matrix -> append_matrix matrix rows) |. List.flatten in
       loop (cur_rows + 1) new_res in
-  loop 0 rows |. filter_dups_from_list |. List.keep (fun array -> has_at_least_n_stones array min_stones) |. List.map (fun matrix -> shape_quad size matrix)
+  loop 1 rows |. filter_dups_from_list |. List.keep (fun array -> has_at_least_n_stones array min_stones) |. List.map (fun matrix -> shape_quad size matrix)
 
 let write_deck deck dest= 
   writeFileSync dest deck `ascii
@@ -68,10 +68,10 @@ let get_unsafe matrix x_ind y_ind =
   Array.getExn matrix y_ind |. Array.getExn x_ind
 
 let set_unsafe matrix x_ind y_ind value =
-  Js.log3 x_ind y_ind value;
   Array.getExn matrix y_ind |. Array.setExn x_ind value
 
 let rot90_square matrix = 
+  Js.log matrix;
   let dim = Array.length matrix in
   let rotated = Array.make dim (-1) |. Array.map (Array.make dim) in 
   for i = 0 to dim - 1 do 
@@ -81,11 +81,48 @@ let rot90_square matrix =
   done; 
   rotated
 
+let get_array_dim m1 = 
+  let m = Array.length m1 in
+  let n = Array.length (Array.getExn m1 0) in
+  (n, m)
+
+let cmp_matrix_square m1 m2 = 
+  let dim = Array.length m1 in
+  let rec loop idx =
+    if idx = dim then 1 else 
+    let row_m1 = Array.getExn m1 idx in 
+    let row_m2 = Array.getExn m2 idx in 
+    if Array.eq  row_m1 row_m2 (=) then
+      loop (idx + 1)
+    else -1 in
+  loop 0
+    
+let eq_matrix_square m1 m2 = 
+  if cmp_matrix_square m1 m2 = 1 then true else false
+
+let is_rot_equal m1 m2 = 
+  let m2_rot_90 = rot90_square m2 in
+  let m2_rot_180 = rot90_square m2_rot_90 in
+  let m2_rot_270 = rot90_square m2_rot_180 in 
+  let rec loop matrices = 
+    match matrices with 
+    | [] -> false
+    | y::ys -> if eq_matrix_square m1 y then true else loop ys in 
+  loop [m2; m2_rot_90; m2_rot_180; m2_rot_270] 
+
+let make_n_m_matrix n m = 
+  Array.make n 0 |. Array.map (Array.make m)
+
+let filter_rot_equal matrices = 
+  let not_rot_equal = List.make 0 (make_n_m_matrix 0 0) in
+  List.reduce matrices not_rot_equal (fun acc row -> if List.has acc row is_rot_equal then acc else List.add acc row)
+
 let generate_size_3_stones_6 () = 
-  let deck_string = generate_pattern ~min_stones:5 3 6 |. List.map (fun pattern -> Js_json.stringifyAny pattern |. Option.getExn) |> String.concat ",\n" in
+  let deck_string = generate_pattern ~min_stones:5 3 7 |. filter_rot_equal |. List.map (fun pattern -> Js_json.stringifyAny pattern |. Option.getExn) |> String.concat ",\n" in
   String.concat "\n" ["{ \"deck\": ["; deck_string; "]}" ] |. write_deck "deck_3_6.json"
   
-let m1 () = let test_mat = Array.make 3 0 |. Array.map (Array.make 3) in 
+
+let m1 () = let test_mat = make_n_m_matrix 3 3 in 
   set_unsafe test_mat 0 0 1; 
   set_unsafe test_mat 1 0 2;
   set_unsafe test_mat 2 0 3;
@@ -95,8 +132,18 @@ let m1 () = let test_mat = Array.make 3 0 |. Array.map (Array.make 3) in
   set_unsafe test_mat 0 2 7;
   set_unsafe test_mat 1 2 8;
   set_unsafe test_mat 2 2 9;
-  Js.log test_mat;
-  Js.log "now";
   rot90_square test_mat |. rot90_square 
 
-let () =  let a = m1() in Js.log "done"; Js.log a
+let m2 () = let test_mat = Array.make 3 0 |. Array.map (Array.make 3) in 
+  set_unsafe test_mat 0 0 1; 
+  set_unsafe test_mat 1 0 2;
+  set_unsafe test_mat 2 0 3;
+  set_unsafe test_mat 0 1 4;
+  set_unsafe test_mat 1 1 5;
+  set_unsafe test_mat 2 1 6;
+  set_unsafe test_mat 0 2 7;
+  set_unsafe test_mat 1 2 8;
+  set_unsafe test_mat 2 2 9;
+  test_mat
+
+let () = generate_size_3_stones_6 ()
