@@ -145,6 +145,28 @@ function write_deck(deck, dest) {
   return /* () */0;
 }
 
+function get_unsafe(matrix, x_ind, y_ind) {
+  return Belt_Array.getExn(Belt_Array.getExn(matrix, y_ind), x_ind);
+}
+
+function set_unsafe(matrix, x_ind, y_ind, value) {
+  console.log(x_ind, y_ind, value);
+  return Belt_Array.setExn(Belt_Array.getExn(matrix, y_ind), x_ind, value);
+}
+
+function rot90_square(matrix) {
+  var dim = matrix.length;
+  var rotated = Belt_Array.map(Belt_Array.make(dim, -1), (function (param) {
+          return Belt_Array.make(dim, param);
+        }));
+  for(var i = 0 ,i_finish = dim - 1 | 0; i <= i_finish; ++i){
+    for(var j = 0 ,j_finish = dim - 1 | 0; j <= j_finish; ++j){
+      set_unsafe(rotated, (dim - i | 0) - 1 | 0, j, get_unsafe(matrix, j, i));
+    }
+  }
+  return rotated;
+}
+
 function generate_size_3_stones_6(param) {
   var deck_string = $$String.concat(",\n", Belt_List.map(generate_pattern(5, 3, 6), (function (pattern) {
               return Belt_Option.getExn(Caml_option.undefined_to_opt(JSON.stringify(pattern)));
@@ -161,7 +183,29 @@ function generate_size_3_stones_6(param) {
                 ]), "deck_3_6.json");
 }
 
-generate_size_3_stones_6(/* () */0);
+function m1(param) {
+  var test_mat = Belt_Array.map(Belt_Array.make(3, 0), (function (param) {
+          return Belt_Array.make(3, param);
+        }));
+  set_unsafe(test_mat, 0, 0, 1);
+  set_unsafe(test_mat, 1, 0, 2);
+  set_unsafe(test_mat, 2, 0, 3);
+  set_unsafe(test_mat, 0, 1, 4);
+  set_unsafe(test_mat, 1, 1, 5);
+  set_unsafe(test_mat, 2, 1, 6);
+  set_unsafe(test_mat, 0, 2, 7);
+  set_unsafe(test_mat, 1, 2, 8);
+  set_unsafe(test_mat, 2, 2, 9);
+  console.log(test_mat);
+  console.log("now");
+  return rot90_square(rot90_square(test_mat));
+}
+
+var a = m1(/* () */0);
+
+console.log("done");
+
+console.log(a);
 
 exports.DIM = DIM;
 exports.generate_one_stone_permutations = generate_one_stone_permutations;
@@ -172,5 +216,9 @@ exports.shape_quad = shape_quad;
 exports.has_at_least_n_stones = has_at_least_n_stones;
 exports.generate_pattern = generate_pattern;
 exports.write_deck = write_deck;
+exports.get_unsafe = get_unsafe;
+exports.set_unsafe = set_unsafe;
+exports.rot90_square = rot90_square;
 exports.generate_size_3_stones_6 = generate_size_3_stones_6;
-/*  Not a pure module */
+exports.m1 = m1;
+/* a Not a pure module */

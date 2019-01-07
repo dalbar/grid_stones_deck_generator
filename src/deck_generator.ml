@@ -64,8 +64,39 @@ let generate_pattern ?(min_stones = 0) size max_stones =
 let write_deck deck dest= 
   writeFileSync dest deck `ascii
 
+let get_unsafe matrix x_ind y_ind = 
+  Array.getExn matrix y_ind |. Array.getExn x_ind
+
+let set_unsafe matrix x_ind y_ind value =
+  Js.log3 x_ind y_ind value;
+  Array.getExn matrix y_ind |. Array.setExn x_ind value
+
+let rot90_square matrix = 
+  let dim = Array.length matrix in
+  let rotated = Array.make dim (-1) |. Array.map (Array.make dim) in 
+  for i = 0 to dim - 1 do 
+    for j = 0 to dim - 1 do
+      get_unsafe matrix j i |> set_unsafe rotated (dim - i - 1) j
+    done
+  done; 
+  rotated
 
 let generate_size_3_stones_6 () = 
   let deck_string = generate_pattern ~min_stones:5 3 6 |. List.map (fun pattern -> Js_json.stringifyAny pattern |. Option.getExn) |> String.concat ",\n" in
   String.concat "\n" ["{ \"deck\": ["; deck_string; "]}" ] |. write_deck "deck_3_6.json"
-let () = generate_size_3_stones_6 ()
+  
+let m1 () = let test_mat = Array.make 3 0 |. Array.map (Array.make 3) in 
+  set_unsafe test_mat 0 0 1; 
+  set_unsafe test_mat 1 0 2;
+  set_unsafe test_mat 2 0 3;
+  set_unsafe test_mat 0 1 4;
+  set_unsafe test_mat 1 1 5;
+  set_unsafe test_mat 2 1 6;
+  set_unsafe test_mat 0 2 7;
+  set_unsafe test_mat 1 2 8;
+  set_unsafe test_mat 2 2 9;
+  Js.log test_mat;
+  Js.log "now";
+  rot90_square test_mat |. rot90_square 
+
+let () =  let a = m1() in Js.log "done"; Js.log a
