@@ -154,7 +154,6 @@ function set_unsafe(matrix, x_ind, y_ind, value) {
 }
 
 function rot90_square(matrix) {
-  console.log(matrix);
   var dim = matrix.length;
   var rotated = Belt_Array.map(Belt_Array.make(dim, -1), (function (param) {
           return Belt_Array.make(dim, param);
@@ -250,7 +249,7 @@ function filter_rot_equal(matrices) {
 }
 
 function generate_size_3_stones_6(param) {
-  var deck_string = $$String.concat(",\n", Belt_List.map(filter_rot_equal(generate_pattern(5, 3, 7)), (function (pattern) {
+  var deck_string = $$String.concat(",\n", Belt_List.map(filter_rot_equal(generate_pattern(5, 3, 6)), (function (pattern) {
               return Belt_Option.getExn(Caml_option.undefined_to_opt(JSON.stringify(pattern)));
             })));
   return write_deck($$String.concat("\n", /* :: */[

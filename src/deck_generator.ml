@@ -71,7 +71,6 @@ let set_unsafe matrix x_ind y_ind value =
   Array.getExn matrix y_ind |. Array.setExn x_ind value
 
 let rot90_square matrix = 
-  Js.log matrix;
   let dim = Array.length matrix in
   let rotated = Array.make dim (-1) |. Array.map (Array.make dim) in 
   for i = 0 to dim - 1 do 
@@ -118,7 +117,7 @@ let filter_rot_equal matrices =
   List.reduce matrices not_rot_equal (fun acc row -> if List.has acc row is_rot_equal then acc else List.add acc row)
 
 let generate_size_3_stones_6 () = 
-  let deck_string = generate_pattern ~min_stones:5 3 7 |. filter_rot_equal |. List.map (fun pattern -> Js_json.stringifyAny pattern |. Option.getExn) |> String.concat ",\n" in
+  let deck_string = generate_pattern ~min_stones:5 3 6 |. filter_rot_equal |. List.map (fun pattern -> Js_json.stringifyAny pattern |. Option.getExn) |> String.concat ",\n" in
   String.concat "\n" ["{ \"deck\": ["; deck_string; "]}" ] |. write_deck "deck_3_6.json"
   
 
